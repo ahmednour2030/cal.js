@@ -37,6 +37,12 @@ TABLE.calendar TD DIV.cal2 {
   background-color: #DAE1F1;
 }
 
+TABLE.calendar TD DIV.github {
+  border-color: #B4B6DC;
+  color: #4258A8;
+  background-color: #EAE1F1;
+}
+
 TABLE.calendar TD DIV.event {
   overflow:hidden;
   white-space: nowrap; 

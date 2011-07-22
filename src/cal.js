@@ -72,7 +72,15 @@ var Cal = {
   }
   
   , refreshData: function refreshData() {
-    this.getData( this.start, this.end, this.acceptData, this );
+    var newRange = this.start + "->" + this.end;
+    if( this.currentDataRange == newRange ) {
+      // reuse
+      this.acceptData(this.data);
+    } else {
+      // refresh
+      this.currentDataRange = newRange;
+      this.getData( this.start, this.end, this.acceptData, this );
+    }
   }
 
   , _getDate: function _getDate() {
@@ -161,7 +169,17 @@ var Cal = {
   
   , getEvents: function getEvents(date) {
       var key = this._formatDate("d-m-yyyy", date);
-      return key in this.data ? this.data[key] : [];
+      var events = key in this.data ? this.data[key] : [];
+      events.sort( function(a,b) {
+        if( a.type == "allday" ) { return 0; }
+        if( b.type == "allday" ) { return 0; }
+        var re = /(\d+):(\d+)/;
+        var aa = a.start.match(re);
+        var bb = b.start.match(re);
+        return (parseInt(aa[1])*60 + parseInt(aa[2]))
+             - (parseInt(bb[1])*60 + parseInt(bb[2]));
+      } );
+      return events;
     }
 
   , _generateClasses: function generateClasses(day) {
