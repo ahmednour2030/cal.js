@@ -1,7 +1,8 @@
 <html>
 <head>
   <script src="http://protojs.org/js/ProtoJS.min.js"></script>
- <link href="cal.css" media="screen" rel="stylesheet" type="text/css" />
+  <script src="../src/cal.js"></script>
+  <link href="cal.css" media="screen" rel="stylesheet" type="text/css" />
 </head>
 <body>
   <h1>cal.js</h1>
@@ -48,33 +49,12 @@
   
   <div id="popup" class="popup"></div>
   
-  <script src="../src/cal.js"></script>
   <script>
-    var data = { "18-7-2011": [ 
-                 { type: "allday", 
-                   calendar: "cal1",
-                   subject: "review meeting" },
-                 { type: "allday", 
-                   calendar: "cal2",
-                   subject: "holiday" },
-                 { type: "timed",
-                   start: "10:00", 
-                   end: "11:00",
-                   calendar: "cal1",
-                   subject: "staff meeting" },
-                 { type: "timed",
-                   start: "13:30",
-                   end: "14:00",
-                   calendar: "cal2",
-                   subject: "interview" }
-                 ]
-               };
-               
     var myCalendar = Cal.activate              ( "c1"                  )
                         .useDataProvider       ( fetchData             )
                         .notifyOfDaySelection  ( processDaySelection   )
                         .notifyOfEventSelection( showEvent )
-                        .render();
+                        .gotoToday();
 
     function updateLabel(date) {
       var monthLabel = [ "January", "February", "March", "April", "May",
@@ -86,8 +66,28 @@
 
 
     // handlers are executed in the calendar's context, thus this is available
-    function fetchData(from, to) {
-      return data;
+    function fetchData(from, to, callback, context) {
+      var data = { "18-7-2011": [ 
+                   { type: "allday", 
+                     calendar: "cal1",
+                     subject: "review meeting" },
+                   { type: "allday", 
+                     calendar: "cal2",
+                     subject: "holiday" },
+                   { type: "timed",
+                     start: "10:00", 
+                     end: "11:00",
+                     calendar: "cal1",
+                     subject: "staff meeting" },
+                   { type: "timed",
+                     start: "13:30",
+                     end: "14:00",
+                     calendar: "cal2",
+                     subject: "interview" }
+                   ]
+                 };
+      // synchronized
+      callback.apply( context, [ data ] );
     }
 
     function processDaySelection(day) {

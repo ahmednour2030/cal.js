@@ -37,43 +37,57 @@ var Cal = {
 
   , gotoNextMonth: function gotoNextMonth() {
       this.today.setMonth(this.today.getMonth() + 1);
-      this.render();
+      this._updateBoundaries();
+      this.refreshData();
       this.handleDaySelection(this.today);
     }
 
   , gotoPreviousMonth: function gotoPreviousMonth() {
       this.today.setMonth(this.today.getMonth() - 1);
-      this.render();
+      this._updateBoundaries();
+      this.refreshData();
       this.handleDaySelection(this.today);
     }
 
   , gotoDate: function gotoDate(date) {
       if( ! this.today || ! this._isSameDay(date, this.today ) ) {
         this.today = date ? new Date( date.getTime() ) : new Date();
-        this.render();
+        this._updateBoundaries();
+        this.refreshData();
         this.handleDaySelection(this.today);
       }
     }
     
+  , _updateBoundaries: function _updateBoundaries() {
+      this.start = this._getDate(); 
+      this.start.setDate(1);
+      this.end   = this._getDate();
+      this.end.setDate( this._daysInMonth( this.today.getMonth(), 
+                                           this.today.getFullYear() ) );
+  }
+    
   , gotoToday: function gotoToday() {
     this.gotoDate( new Date() );
+    return this;
+  }
+  
+  , refreshData: function refreshData() {
+    this.getData( this.start, this.end, this.acceptData, this );
   }
 
   , _getDate: function _getDate() {
     if( ! this.today ) { this.gotoDate(); }
     return new Date(this.today.getTime());
   }
+    
+  , acceptData: function acceptData(data) {
+    this.data = data;
+    this.render();
+  }
 
   , render: function render() {
-    var start = this._getDate(); 
-        start.setDate(1);
-    var end   = this._getDate();
-        end.setDate( this._daysInMonth( this.today.getMonth(), 
-                                        this.today.getFullYear() ) );
-    var startWeekDay = start.getDay();
+    var startWeekDay = this.start.getDay();
     startWeekDay = startWeekDay <= 0 ? 7 : startWeekDay; // move Sunday to end
-
-    var data = this.getData(start, end);
 
     // clear leading days
     for( var d=1;d<=startWeekDay;d++ ) {
@@ -84,8 +98,8 @@ var Cal = {
     }
 
     // actual days in this month
-    var now = new Date(start.getTime());
-    for( var d=1;d<=end.getDate();d++) {
+    var now = new Date(this.start.getTime());
+    for( var d=1;d<=this.end.getDate();d++) {
       now.setDate(d);
       with( document.getElementById( this.id + (d + startWeekDay - 1) ) ) {
         innerHTML = "";
@@ -98,7 +112,7 @@ var Cal = {
     }
 
     // clear trailing days
-    var begin = end.getDate()+startWeekDay;
+    var begin = this.end.getDate()+startWeekDay;
     for( var d=begin;d<=42;d++ ) {
       with( document.getElementById( this.id + d ) ) {
         innerHTML = "";
@@ -147,7 +161,7 @@ var Cal = {
   
   , getEvents: function getEvents(date) {
       var key = this._formatDate("d-m-yyyy", date);
-      return key in data ? data[key] : [];
+      return key in this.data ? this.data[key] : [];
     }
 
   , _generateClasses: function generateClasses(day) {
