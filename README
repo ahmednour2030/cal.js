@@ -1,0 +1,18 @@
+cal.js
+by Christophe VG <contact+cal@christophe.vg>
+Copyright 2011, Christophe VG
+
+---
+
+cal.js is a small Javascript library that activates basic HTML and turns it
+into a dynamic calendar widget. By registering callbacks, any external data-
+source or other visual components can be integrated in a loosely coupled way.
+
+This way, cal.js doesn't add any structural HTML to the document and doesn't
+impose any visual design. It merely updates a set of tags according to a basic
+convention: just identify 35 elements in your HTML and cal.js will use these
+to render any month.
+
+The examples/ directory will soon contain examples that integrate cal.js with
+Google Calendar, visualizing any public calendar or use the commits of a
+GitHub hosted project, to visualize its history.
