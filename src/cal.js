@@ -54,6 +54,10 @@ var Cal = {
         this.handleDaySelection(this.today);
       }
     }
+    
+  , gotoToday: function gotoToday() {
+    this.gotoDate( new Date() );
+  }
 
   , _getDate: function _getDate() {
     if( ! this.today ) { this.gotoDate(); }

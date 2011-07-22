@@ -98,9 +98,9 @@
 </head>
 <body>
   <h1>cal.js</h1>
-  <a href="javascript:" onclick="gotoPreviousMonth()">prev</a> - 
-  <a href="javascript:" onclick="gotoToday()">today</a> - 
-  <a href="javascript:" onclick="gotoNextMonth()">next</a>
+  <a href="javascript:" onclick="myCalendar.gotoPreviousMonth()">prev</a> - 
+  <a href="javascript:" onclick="myCalendar.gotoToday()">today</a> - 
+  <a href="javascript:" onclick="myCalendar.gotoNextMonth()">next</a>
   <span id="now"></span>
   <table id="c1" class="calendar">
     <tr>
@@ -166,7 +166,7 @@
     var myCalendar = Cal.activate              ( "c1"                  )
                         .useDataProvider       ( fetchData             )
                         .notifyOfDaySelection  ( processDaySelection   )
-                        .notifyOfEventSelection( processEventSelection )
+                        .notifyOfEventSelection( showEvent )
                         .render();
 
     function updateLabel(date) {
@@ -188,14 +188,6 @@
       updateLabel(day);
       this.gotoDate(day);
     }
-    
-    function processEventSelection(event, elem) {
-      showEvent(event, elem);
-    }
-    
-    function gotoNextMonth()     { myCalendar.gotoNextMonth();      }
-    function gotoToday()         { myCalendar.gotoDate(new Date()); }
-    function gotoPreviousMonth() { myCalendar.gotoPreviousMonth();  }
     
     function findPos( obj ) {
 	    var left = top = 0;
