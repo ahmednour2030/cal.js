@@ -1,77 +1,148 @@
-var Cal = { 
+(function (globals) {
+  
+  var
+  
+  // first some private functionality, we don't expose this
+  
+  isSameDay = function isSameDay(day1, day2) {
+    return formatDate("d-m-yyyy", day1) 
+        == formatDate("d-m-yyyy", day2);
+  },
+  
+  formatDate = function formatDate(format, date) {
+    // TODO add all possible formats, now only the one we use ;-)
+    return format.replace(    "d", date.getDate()     )
+                 .replace(    "m", date.getMonth() +1 )
+                 .replace( "yyyy", date.getFullYear() );
+  },
+
+  daysInMonth = function daysInMonth(month, year) {
+	  return 32 - new Date(year, month, 32).getDate();
+  },
+  
+  createDay = function createDay(context, day, events) {
+    var container = document.createElement("DIV");
+    container.className = "container";
+    
+    // create date header
+    var date = document.createElement("DIV");
+    date.className = "number";
+    date.innerHTML = day.getDate();
+    container.appendChild(date);
+    
+    // add events
+    var count = events.length;
+    for(var e=0; e<count; e++ ) {
+      var event = events[e];
+      var elem = document.createElement("DIV");
+      elem.className = event.type + " event " + event.calendar;
+      elem.onclick = (function(ev) { 
+        return function(e) {
+          context.handleEventSelection(ev, elem);
+          if( !e ) { var e = window.event; }
+	        e.cancelBubble = true;
+	        if( e.stopPropagation ) { e.stopPropagation(); }
+        }
+      })(event);
+      var subject = ( event.type == "timed" ? event.start + " " : "" ) +  event.subject;
+      elem.innerHTML = subject;
+      container.appendChild(elem);
+    }
+
+    return container;
+  },
+  
+  generateClasses = function generateClasses(day, today) {
+    var classes = [];
+    var now = new Date();
+    if( isSameDay(day, now) ) {
+      classes.push( "today" );
+    }
+    if( isSameDay(day, today) ) {
+      classes.push( "selected" );
+    }
+    return classes.join( " " );
+  },
+
+  // next expose the public cal.js interface, with local reference
+
+  cal = globals.Cal = {};
+  
   // public factory method
-  activate : function activate(id) {
-    return new Cal.calendar(id);
-  }
+  cal.activate = function activate(id) {
+    return new cal.calendar(id);
+  };
+  
+  // constructor some sensible defaults
+  cal.calendar = function calendar(id) {
+    this.id = id;
+    this.useDataProvider       ( function() { return {} } );
+    this.notifyOfDaySelection  ( function() { }           );
+    this.notifyOfEventSelection( function() { }           );
+  };
 
-  // a private implementation, no direct instantiation (no special reason)
-, calendar : Class.extend( {
+  // setters for callbacks
 
-    init: function init(id) {
-      this.id = id;
-      this.getData              = function() { return {} };
-      this.handleDaySelection   = function() { };
-      this.handleEventSelection = function() { };
-    }
+  // a data-provider is called to request new data
+  // interface: getData( from, to, callback, context )
+  cal.calendar.prototype.useDataProvider = function useDataProvider( cb ) {
+    if( typeof cb == "function" ) { this.getData = cb; }
+    return this;
+  };
 
-  , useDataProvider: function useDataProvider(callback) { 
-      if( typeof callback == "function" ) { 
-        this.getData = callback;
-      }
-      return this;
-    }
+  // a function to call when a Day is selected
+  // interface: handleDaySelection(date)
+  cal.calendar.prototype.notifyOfDaySelection = function notifyOfDaySelection( cb ) { 
+    if( typeof cb == "function" ) { this.handleDaySelection = cb; }
+    return this;
+  };
 
-  , notifyOfDaySelection: function notifyOfDaySelection(callback) { 
-      if( typeof callback == "function" ) { 
-        this.handleDaySelection = callback; 
-      }
-      return this;
-    }
+  // a function to call when an Event is selected
+  // interface: handleEventSelection( event, htmlElement )
+  cal.calendar.prototype.notifyOfEventSelection = function notifyOfEventSelection(cb) { 
+    if( typeof cb == "function" ) { this.handleEventSelection = cb; }
+    return this;
+  };
 
-  , notifyOfEventSelection: function notifyOfEventSelection(callback) { 
-      if( typeof callback == "function" ) { 
-        this.handleEventSelection = callback;
-      }
-      return this;
-    }
+  // method to move the current date one month ahead
+  cal.calendar.prototype.gotoNextMonth = function gotoNextMonth() {
+    var newDate = new Date( this.today.getTime() );
+    newDate.setMonth( newDate.getMonth() + 1 );
+    this.gotoDate( newDate );
+    return this;
+  };
 
-  , gotoNextMonth: function gotoNextMonth() {
-      this.today.setMonth(this.today.getMonth() + 1);
-      this._updateBoundaries();
-      this.refreshData();
-      this.handleDaySelection(this.today);
-    }
+  // method to move the current date one month back
+  cal.calendar.prototype.gotoPreviousMonth = function gotoPreviousMonth() {
+    var newDate = new Date( this.today.getTime() );
+    newDate.setMonth( newDate.getMonth() - 1 );
+    this.gotoDate( newDate );
+    return this;
+  };
 
-  , gotoPreviousMonth: function gotoPreviousMonth() {
-      this.today.setMonth(this.today.getMonth() - 1);
-      this._updateBoundaries();
-      this.refreshData();
-      this.handleDaySelection(this.today);
-    }
-
-  , gotoDate: function gotoDate(date) {
-      if( ! this.today || ! this._isSameDay(date, this.today ) ) {
-        this.today = date ? new Date( date.getTime() ) : new Date();
-        this._updateBoundaries();
-        this.refreshData();
-        this.handleDaySelection(this.today);
-      }
-    }
-    
-  , _updateBoundaries: function _updateBoundaries() {
-      this.start = this._getDate(); 
+  // method to move the current date to a sepecific date
+  cal.calendar.prototype.gotoDate = function gotoDate(date) {
+    if( ! this.today || ! isSameDay(date, this.today ) ) {
+      this.today = date ? new Date( date.getTime() ) : new Date();
+      this.start = new Date(this.today.getTime());
       this.start.setDate(1);
-      this.end   = this._getDate();
-      this.end.setDate( this._daysInMonth( this.today.getMonth(), 
-                                           this.today.getFullYear() ) );
-  }
+      this.end   = new Date(this.today.getTime());
+      this.end.setDate( daysInMonth( this.today.getMonth(), 
+                                     this.today.getFullYear() ) );
+      this.refreshData();
+      this.handleDaySelection(this.today);
+    }
+    return this;
+  };
     
-  , gotoToday: function gotoToday() {
+  // method to move the current date to the current day
+  cal.calendar.prototype.gotoToday = function gotoToday() {
     this.gotoDate( new Date() );
     return this;
-  }
-  
-  , refreshData: function refreshData() {
+  };
+
+  // method to refresh the data for the currently selected month
+  cal.calendar.prototype.refreshData = function refreshData() {
     var newRange = this.start + "->" + this.end;
     if( this.currentDataRange == newRange ) {
       // reuse
@@ -83,17 +154,14 @@ var Cal = {
     }
   }
 
-  , _getDate: function _getDate() {
-    if( ! this.today ) { this.gotoDate(); }
-    return new Date(this.today.getTime());
-  }
-    
-  , acceptData: function acceptData(data) {
+  // method to accept new data and re-render the visual representation
+  cal.calendar.prototype.acceptData = function acceptData(data) {
     this.data = data;
     this.render();
-  }
+  };
 
-  , render: function render() {
+  // method to render the visual representation
+  cal.calendar.prototype.render = function render() {
     var startWeekDay = this.start.getDay();
     startWeekDay = startWeekDay <= 0 ? 7 : startWeekDay; // move Sunday to end
 
@@ -111,11 +179,11 @@ var Cal = {
       now.setDate(d);
       with( document.getElementById( this.id + (d + startWeekDay - 1) ) ) {
         innerHTML = "";
-        appendChild( this._createDay(now, this.getEvents(now)) );
-        className = this._generateClasses(now);
-        onclick   = (function(day) { 
-          return function() { this.handleDaySelection(day) }.scope(this);
-        }.scope(this))(new Date(now.getTime()));
+        appendChild( createDay(this, now, this.getEvents(now)) );
+        className = generateClasses(now, this.today);
+        onclick   = (function(context, day) { 
+          return function() { context.handleDaySelection(day) };
+        })(this, new Date(now.getTime()));
       }
     }
 
@@ -128,80 +196,22 @@ var Cal = {
       }
     }
     return this;
-  }
+  };
 
-  , _formatDate: function _formatDate(format, date) {
-    // TODO add all possible formats, now only the one we use ;-)
-    return format.replace(    "d", date.getDate()     )
-                 .replace(    "m", date.getMonth() +1 )
-                 .replace( "yyyy", date.getFullYear() );
-  }
-
-  , _createDay: function _createDay(day, events) {
-    var container = document.createElement("DIV");
-    container.className = "container";
-    
-    // create date header
-    var date = document.createElement("DIV");
-    date.className = "number";
-    date.innerHTML = day.getDate();
-    container.appendChild(date);
-    
-    // add events
-    events.iterate( function( event ) {
-      var elem = document.createElement("DIV");
-      elem.className = event.type + " event " + event.calendar;
-      elem.onclick = (function(ev) { 
-        return function(e) {
-          this.handleEventSelection(ev, elem);
-          if( !e ) { var e = window.event; }
-	        e.cancelBubble = true;
-	        if( e.stopPropagation ) { e.stopPropagation(); }
-        }.scope(this)
-      }.scope(this))(event);
-      var subject = ( event.type == "timed" ? event.start + " " : "" ) +  event.subject;
-      elem.innerHTML = subject;
-      container.appendChild(elem);
-    }.scope(this) );
-
-    return container;
-  }
+  // method to return the events on a specific date, ordered chronologically
+  cal.calendar.prototype.getEvents = function getEvents(date) {
+    var key = formatDate("d-m-yyyy", date);
+    var events = key in this.data ? this.data[key] : [];
+    events.sort( function(a,b) {
+      if( a.type == "allday" ) { return 0; }
+      if( b.type == "allday" ) { return 0; }
+      var re = /(\d+):(\d+)/;
+      var aa = a.start.match(re);
+      var bb = b.start.match(re);
+      return (parseInt(aa[1])*60 + parseInt(aa[2]))
+           - (parseInt(bb[1])*60 + parseInt(bb[2]));
+    } );
+    return events;
+  };
   
-  , getEvents: function getEvents(date) {
-      var key = this._formatDate("d-m-yyyy", date);
-      var events = key in this.data ? this.data[key] : [];
-      events.sort( function(a,b) {
-        if( a.type == "allday" ) { return 0; }
-        if( b.type == "allday" ) { return 0; }
-        var re = /(\d+):(\d+)/;
-        var aa = a.start.match(re);
-        var bb = b.start.match(re);
-        return (parseInt(aa[1])*60 + parseInt(aa[2]))
-             - (parseInt(bb[1])*60 + parseInt(bb[2]));
-      } );
-      return events;
-    }
-
-  , _generateClasses: function generateClasses(day) {
-    var classes = [];
-    var now = new Date();
-    if( this._isSameDay(day, now) ) {
-      classes.push( "today" );
-    }
-    if( this._isSameDay(day, this.today) ) {
-      classes.push( "selected" );
-    }
-    return classes.join( " " );
-  }
-
-  , _isSameDay: function _isSameDay(day1, day2) {
-    return this._formatDate("d-m-yyyy", day1) 
-        == this._formatDate("d-m-yyyy", day2);
-  }
-
-  , _daysInMonth: function _daysInMonth(month, year) {
-	  return 32 - new Date(year, month, 32).getDate();
-  }
-
-} )
-};
+}(window));

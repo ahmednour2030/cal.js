@@ -1,6 +1,5 @@
 <html>
 <head>
-  <script src="http://protojs.org/js/ProtoJS.min.js"></script>
   <script src="https://raw.github.com/fitzgen/github-api/master/github.js"></script>
   <script src="../src/cal.js"></script>
   <link href="cal.css" media="screen" rel="stylesheet" type="text/css" />
@@ -71,7 +70,9 @@
 
       function process(data) {
         var events = {};
-        data.commits.iterate( function( commit ) {
+        var count = data.commits.length;
+        for( var c=0; c<count; c++ ) {
+          var commit = data.commits[c];
           // 2011-07-22T06:45:09-07:00
           var regexp = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-]\d{2}):\d{2}/
           var m = commit.committed_date.match(regexp);
@@ -88,7 +89,7 @@
               calendar: "github"
             } );
           }
-        } );
+        }
         callback.apply(context, [events]);
       }
       
