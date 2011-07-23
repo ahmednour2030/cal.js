@@ -43,6 +43,12 @@ TABLE.calendar TD DIV.github {
   background-color: #EAE1F1;
 }
 
+TABLE.calendar TD DIV.google-test {
+  border-color: red;
+  color: red;
+  background-color: #ccc;
+}
+
 TABLE.calendar TD DIV.event {
   overflow:hidden;
   white-space: nowrap; 

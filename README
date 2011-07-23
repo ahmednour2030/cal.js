@@ -13,6 +13,6 @@ impose any visual design. It merely updates a set of tags according to a basic
 convention: just identify 35 elements in your HTML and cal.js will use these
 to render any month.
 
-The examples/ directory will soon contain examples that integrate cal.js with
-Google Calendar, visualizing any public calendar or use the commits of a
-GitHub hosted project, to visualize its history.
+The examples/ directory contains examples that integrate cal.js with Google
+Calendar, visualizing a public calendar or use the commits of a GitHub hosted
+project, to visualize its history.
