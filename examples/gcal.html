@@ -1,8 +1,10 @@
-<html>
+<html lang="en">
 <head>
-  <script type="text/javascript" src="http://www.google.com/jsapi"></script>
-  <script type="text/javascript" src="gcal.js"></script>
+  <meta charset="utf-8" />
+  <title>cal.js Google Calendar demo</title>
+  <script src="http://www.google.com/jsapi"></script>
   <script src="../src/cal.js"></script>
+  <script src="../src/providers/google.js"></script>
   <link href="cal.css" media="screen" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -49,14 +51,37 @@
   </table>
   
   <div id="popup" class="popup"></div>
-  
+
   <script>
-    var myCalendar = Cal.activate              ( "c1"                  )
-                        .useDataProvider       ( fetchData             )
-                        .notifyOfDaySelection  ( processDaySelection   )
-                        .notifyOfEventSelection( showEvent )
+    // setup a connection to Google, using one of the default providers
+    var myGoogle = Cal.providers.google
+      .connect( "et3o9bb82cs6btuui8vfigbd2c%40group.calendar.google.com" );
+    
+    // create your calender object, pointing it to our HTML
+    var myCalendar = Cal.activate                ( "c1"                  )
+                        .useDataProvider         ( myGoogle              )
+                        .notifyOfDaySelection    ( processDaySelection   )
+                        .notifyOfEventSelection  ( showEvent )
                         .gotoToday();
 
+    // when a new date/day has been selected...
+    // this handler is executed within the scope of the calendar, so "this"
+    // _is_ the actual calendar, so we can call any method on this.
+    function processDaySelection(day) {
+      hideEvent();        // make sure the event-popup is hidden
+      updateLabel(day);   // update the label to match the new date
+      this.gotoDate(day); // we only got the event, now we want to set it
+    }
+    
+    // hides the event-popup
+    function hideEvent() {
+      document.getElementById("popup").style.display = "none";
+    }
+    
+    // hide the event-popup if the user clicks anywhere
+    document.body.onclick = hideEvent;
+
+    // add a textual representation of the month of the given date
     function updateLabel(date) {
       var monthLabel = [ "January", "February", "March", "April", "May",
                          "June", "July", "August", "September", "October",
@@ -65,33 +90,23 @@
         monthLabel[date.getMonth()] + " " + date.getFullYear();
     }
 
-
-    // handlers are executed in the calendar's context, thus this is available
-    function fetchData(from, to, callback, context) {
-      // call
-      loadCalendarByAddress('et3o9bb82cs6btuui8vfigbd2c%40group.calendar.google.com',
-                            callback, context);  
-    }
-
-    function processDaySelection(day) {
-      hideEvent();
-      updateLabel(day);
-      this.gotoDate(day);
-    }
-    
-    function findPos( obj ) {
-	    var left = top = 0;
-      if( obj.offsetParent ) {
-        do {
-			    left += obj.offsetLeft;
-			    top  += obj.offsetTop;
-			  } while( obj = obj.offsetParent );
-			}
-		  return { left: left, top: top };
-    }
-      
+    // when an event has been selected ...
+    // this handler is executed within the scope of the calendar, so "this"
+    // _is_ the actual calendar, so we can call any method on this.
     function showEvent(event, elem) {
-      var pos  = findPos( elem );
+      // helper function to find the position of an element
+      // http://www.quirksmode.org/js/findpos.html
+      function findPos( obj ) {
+	      var left = top = 0;
+        if( obj.offsetParent ) {
+          do {
+			      left += obj.offsetLeft;
+			      top  += obj.offsetTop;
+			    } while( obj = obj.offsetParent );
+			  }
+		    return { left: left, top: top };
+      }
+      var pos     = findPos( elem );
       var newLeft = pos.left + elem.offsetWidth;
       var newTop  = pos.top - 100;
       with( document.getElementById("popup") ) {
@@ -102,13 +117,6 @@
                             event.start, event.end ].join( "<br>" );
       }
     }
-    
-    function hideEvent() {
-      document.getElementById("popup").style.display = "none";
-    }
-    
-    document.body.onclick = hideEvent;
-  </script>
-  
+  </script>  
 </body>
 </html>

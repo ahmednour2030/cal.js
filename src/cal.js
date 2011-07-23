@@ -73,6 +73,9 @@
     return new cal.calendar(id);
   };
   
+  // namespace for data-providers
+  cal.providers = {};
+  
   // constructor some sensible defaults
   cal.calendar = function calendar(id) {
     this.id = id;
@@ -85,8 +88,15 @@
 
   // a data-provider is called to request new data
   // interface: getData( from, to, callback, context )
-  cal.calendar.prototype.useDataProvider = function useDataProvider( cb ) {
-    if( typeof cb == "function" ) { this.getData = cb; }
+  // or: object with getData method
+  cal.calendar.prototype.useDataProvider = function useDataProvider( provider ) {
+    if( typeof provider == "function" ) { 
+      this.dataContext = this;
+      this.getData = provider;
+    } else {
+      this.dataContext = provider;
+      this.getData = provider.getData;
+    }
     return this;
   };
 
@@ -150,7 +160,8 @@
     } else {
       // refresh
       this.currentDataRange = newRange;
-      this.getData( this.start, this.end, this.acceptData, this );
+      this.getData.apply( this.dataContext,
+                          [ this.start, this.end, this.acceptData, this ] );
     }
   }
 

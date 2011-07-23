@@ -1,7 +1,10 @@
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8" />
+  <title>cal.js GitHub commit history demo</title>
   <script src="https://raw.github.com/fitzgen/github-api/master/github.js"></script>
   <script src="../src/cal.js"></script>
+  <script src="../src/providers/github.js"></script>
   <link href="cal.css" media="screen" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -50,12 +53,34 @@
   <div id="popup" class="popup"></div>
   
   <script>
-    var myCalendar = Cal.activate              ( "c1"                  )
-                        .useDataProvider       ( fetchData             )
-                        .notifyOfDaySelection  ( processDaySelection   )
-                        .notifyOfEventSelection( showEvent )
+    // setup a connection to GitHub, using one of the default providers
+    var myGitHub = Cal.providers.github.connect( "christophevg", "cal.js" );
+    
+    // create your calender object, pointing it to our HTML
+    var myCalendar = Cal.activate                ( "c1"                  )
+                        .useDataProvider         ( myGitHub              )
+                        .notifyOfDaySelection    ( processDaySelection   )
+                        .notifyOfEventSelection  ( showEvent )
                         .gotoToday();
 
+    // when a new date/day has been selected...
+    // this handler is executed within the scope of the calendar, so "this"
+    // _is_ the actual calendar, so we can call any method on this.
+    function processDaySelection(day) {
+      hideEvent();        // make sure the event-popup is hidden
+      updateLabel(day);   // update the label to match the new date
+      this.gotoDate(day); // we only got the event, now we want to set it
+    }
+    
+    // hides the event-popup
+    function hideEvent() {
+      document.getElementById("popup").style.display = "none";
+    }
+    
+    // hide the event-popup if the user clicks anywhere
+    document.body.onclick = hideEvent;
+
+    // add a textual representation of the month of the given date
     function updateLabel(date) {
       var monthLabel = [ "January", "February", "March", "April", "May",
                          "June", "July", "August", "September", "October",
@@ -64,57 +89,23 @@
         monthLabel[date.getMonth()] + " " + date.getFullYear();
     }
 
-
-    // handlers are executed in the calendar's context, thus this is available
-    function fetchData(from, to, callback, context) {
-
-      function process(data) {
-        var events = {};
-        var count = data.commits.length;
-        for( var c=0; c<count; c++ ) {
-          var commit = data.commits[c];
-          // 2011-07-22T06:45:09-07:00
-          var regexp = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([+-]\d{2}):\d{2}/
-          var m = commit.committed_date.match(regexp);
-          var date = new Date( parseInt(m[1]), parseInt(m[2])-1, parseInt(m[3]), 0 + parseInt(m[4]) - parseInt(m[7]), parseInt(m[5]), parseInt(m[6]), 0 );
-          if( date >= from && date <= to ) {
-            var day = date.getDate() + "-" + (date.getMonth()+1) + "-" + date.getFullYear();
-            var hour = date.getHours() + ":" + date.getMinutes();
-            if( typeof events[day] == "undefined" ) { events[day] = [] };
-            events[day].push( {
-              type : "timed",
-              start: hour,
-              end: hour,
-              subject: commit.message,
-              calendar: "github"
-            } );
-          }
-        }
-        callback.apply(context, [events]);
-      }
-      
-      gh.commit.forBranch( "christophevg", "cal.js", "master", process, context );
-    }
-
-    function processDaySelection(day) {
-      hideEvent();
-      updateLabel(day);
-      this.gotoDate(day);
-    }
-    
-    function findPos( obj ) {
-	    var left = top = 0;
-      if( obj.offsetParent ) {
-        do {
-			    left += obj.offsetLeft;
-			    top  += obj.offsetTop;
-			  } while( obj = obj.offsetParent );
-			}
-		  return { left: left, top: top };
-    }
-      
+    // when an event has been selected ...
+    // this handler is executed within the scope of the calendar, so "this"
+    // _is_ the actual calendar, so we can call any method on this.
     function showEvent(event, elem) {
-      var pos  = findPos( elem );
+      // helper function to find the position of an element
+      // http://www.quirksmode.org/js/findpos.html
+      function findPos( obj ) {
+	      var left = top = 0;
+        if( obj.offsetParent ) {
+          do {
+			      left += obj.offsetLeft;
+			      top  += obj.offsetTop;
+			    } while( obj = obj.offsetParent );
+			  }
+		    return { left: left, top: top };
+      }
+      var pos     = findPos( elem );
       var newLeft = pos.left + elem.offsetWidth;
       var newTop  = pos.top - 100;
       with( document.getElementById("popup") ) {
@@ -125,12 +116,6 @@
                             event.start, event.end ].join( "<br>" );
       }
     }
-    
-    function hideEvent() {
-      document.getElementById("popup").style.display = "none";
-    }
-    
-    document.body.onclick = hideEvent;
   </script>
   
 </body>
