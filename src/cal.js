@@ -198,6 +198,8 @@
         context.refreshData(true);
         // this scheduled execution is done, clear the previous timeout flag
         context.timeout = null;
+        // shedule the next refresh
+        context.scheduleDataRefresh();
       } 
     })(this), 300000 ); // refresh every 5 minutes
   };
@@ -223,7 +225,6 @@
     this.data = data;
     this.refreshingData = false;
     this.render();
-    this.scheduleDataRefresh();
   };
 
   // method to render the visual representation
