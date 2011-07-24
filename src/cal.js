@@ -4,6 +4,12 @@
   
   // first some private functionality, we don't expose this
   
+  log = function log( msg ) {
+    if( console && typeof console.log == "function" ) {
+      console.log( msg );
+    }
+  },
+  
   isSameDay = function isSameDay(day1, day2) {
     return formatDate("d-m-yyyy", day1) 
         == formatDate("d-m-yyyy", day2);
@@ -44,7 +50,8 @@
 	        if( e.stopPropagation ) { e.stopPropagation(); }
         }
       })(event);
-      var subject = ( event.type == "timed" ? event.start + " " : "" ) +  event.subject;
+      var subject = ( event.type == "timed" ? event.start + " " : "" ) 
+                  + event.subject;
       elem.innerHTML = subject;
       container.appendChild(elem);
     }
@@ -76,10 +83,13 @@
   // namespace for data-providers
   cal.providers = {};
   
-  // constructor some sensible defaults
+  // constructor
   cal.calendar = function calendar(id) {
     this.id = id;
-    this.useDataProvider       ( function() { return {} } );
+    // provide some no-action defaults
+    this.useDataProvider( function(from, to, callback, context) { 
+      callback.apply(context, [{}]);
+    }, true );
     this.notifyOfDaySelection  ( function() { }           );
     this.notifyOfEventSelection( function() { }           );
   };
@@ -89,34 +99,39 @@
   // a data-provider is called to request new data
   // interface: getData( from, to, callback, context )
   // or: object with getData method
-  cal.calendar.prototype.useDataProvider = function useDataProvider( provider ) {
-    if( typeof provider == "function" ) { 
-      this.dataContext = this;
-      this.getData = provider;
-    } else {
-      this.dataContext = provider;
-      this.getData = provider.getData;
-    }
-    return this;
-  };
+  cal.calendar.prototype.useDataProvider = 
+    function useDataProvider( provider, holdActivation ) {
+      if( typeof provider == "function" ) { 
+        this.dataContext = this;
+        this.getData = provider;
+      } else {
+        this.dataContext = provider;
+        this.getData = provider.getData;
+      }
+      // we now have a dataprovider, we can refresh our data
+      if( ! holdActivation ) { this.refreshData(true); }
+      return this;
+    };
 
   // a function to call when a Day is selected
   // interface: handleDaySelection(date)
-  cal.calendar.prototype.notifyOfDaySelection = function notifyOfDaySelection( cb ) { 
-    if( typeof cb == "function" ) { this.handleDaySelection = cb; }
-    return this;
-  };
+  cal.calendar.prototype.notifyOfDaySelection = 
+    function notifyOfDaySelection( cb ) { 
+      if( typeof cb == "function" ) { this.handleDaySelection = cb; }
+      return this;
+    };
 
   // a function to call when an Event is selected
   // interface: handleEventSelection( event, htmlElement )
-  cal.calendar.prototype.notifyOfEventSelection = function notifyOfEventSelection(cb) { 
-    if( typeof cb == "function" ) { this.handleEventSelection = cb; }
-    return this;
-  };
+  cal.calendar.prototype.notifyOfEventSelection = 
+    function notifyOfEventSelection(cb) { 
+      if( typeof cb == "function" ) { this.handleEventSelection = cb; }
+      return this;
+    };
 
   // method to move the current date one month ahead
   cal.calendar.prototype.gotoNextMonth = function gotoNextMonth() {
-    var newDate = new Date( this.today.getTime() );
+    var newDate = new Date( this.getToday().getTime() );
     newDate.setMonth( newDate.getMonth() + 1 );
     this.gotoDate( newDate );
     return this;
@@ -124,56 +139,96 @@
 
   // method to move the current date one month back
   cal.calendar.prototype.gotoPreviousMonth = function gotoPreviousMonth() {
-    var newDate = new Date( this.today.getTime() );
+    var newDate = new Date( this.getToday().getTime() );
     newDate.setMonth( newDate.getMonth() - 1 );
     this.gotoDate( newDate );
     return this;
   };
-
-  // method to move the current date to a sepecific date
-  cal.calendar.prototype.gotoDate = function gotoDate(date) {
-    if( ! this.today || ! isSameDay(date, this.today ) ) {
-      this.today = date ? new Date( date.getTime() ) : new Date();
-      this.start = new Date(this.today.getTime());
-      this.start.setDate(1);
-      this.end   = new Date(this.today.getTime());
-      this.end.setDate( daysInMonth( this.today.getMonth(), 
-                                     this.today.getFullYear() ) );
-      this.refreshData();
-      this.handleDaySelection(this.today);
-    }
-    return this;
-  };
-    
+  
   // method to move the current date to the current day
   cal.calendar.prototype.gotoToday = function gotoToday() {
     this.gotoDate( new Date() );
     return this;
   };
 
+  // method to move the current date to a sepecific date
+  cal.calendar.prototype.gotoDate = function gotoDate(date) {
+    if( ! this.getToday() || ! isSameDay(date, this.getToday() ) ) {
+      this.today = date ? new Date( date.getTime() ) : new Date();
+      this.start = this.end = null;
+      this.refreshData();
+      this.handleDaySelection(this.getToday());
+    }
+    return this;
+  };
+  
+  cal.calendar.prototype.getToday = function getToday() {
+    if( ! this.today ) {
+      this.today = new Date();
+    }
+    return this.today;
+  };
+  
+  cal.calendar.prototype.getStart = function getStart() {
+    if( ! this.start ) {
+      this.start = new Date(this.getToday().getTime());
+      this.start.setDate(1);
+    }
+    return this.start;
+  };
+  
+  cal.calendar.prototype.getEnd = function getEnd() {
+    if( ! this.end ) {
+      this.end   = new Date(this.getToday().getTime());
+      this.end.setDate( daysInMonth( this.getToday().getMonth(), 
+                                     this.getToday().getFullYear() ) );
+    }
+    return this.end;
+  };
+    
+  // schedule a new refresh of the data
+  cal.calendar.prototype.scheduleDataRefresh = function scheduleDataRefresh(){
+    if( this.timeout ) { 
+      log( "WARNING: already scheduled a refresh" );
+      return;
+    }
+    this.timeout = setTimeout( (function(context) {
+      return function() { 
+        // request a refresh of the data, forcing it to be fetched
+        context.refreshData(true);
+        // this scheduled execution is done, clear the previous timeout flag
+        context.timeout = null;
+      } 
+    })(this), 300000 ); // refresh every 5 minutes
+  };
+
   // method to refresh the data for the currently selected month
-  cal.calendar.prototype.refreshData = function refreshData() {
-    var newRange = this.start + "->" + this.end;
-    if( this.currentDataRange == newRange ) {
+  cal.calendar.prototype.refreshData = function refreshData(force) {
+    if( this.refreshingData ) { return; }
+    this.refreshingData = true;
+    var newRange = this.getStart() + "->" + this.getEnd();
+    if( !force && this.currentDataRange == newRange ) {
       // reuse
       this.acceptData(this.data);
     } else {
       // refresh
       this.currentDataRange = newRange;
       this.getData.apply( this.dataContext,
-                          [ this.start, this.end, this.acceptData, this ] );
+                  [ this.getStart(), this.getEnd(), this.acceptData, this ] );
     }
   }
 
   // method to accept new data and re-render the visual representation
   cal.calendar.prototype.acceptData = function acceptData(data) {
     this.data = data;
+    this.refreshingData = false;
     this.render();
+    this.scheduleDataRefresh();
   };
 
   // method to render the visual representation
   cal.calendar.prototype.render = function render() {
-    var startWeekDay = this.start.getDay();
+    var startWeekDay = this.getStart().getDay();
     startWeekDay = startWeekDay <= 0 ? 7 : startWeekDay; // move Sunday to end
 
     // clear leading days
@@ -185,13 +240,13 @@
     }
 
     // actual days in this month
-    var now = new Date(this.start.getTime());
-    for( var d=1;d<=this.end.getDate();d++) {
+    var now = new Date(this.getStart().getTime());
+    for( var d=1; d<=this.getEnd().getDate(); d++) {
       now.setDate(d);
       with( document.getElementById( this.id + (d + startWeekDay - 1) ) ) {
         innerHTML = "";
         appendChild( createDay(this, now, this.getEvents(now)) );
-        className = generateClasses(now, this.today);
+        className = generateClasses(now, this.getToday());
         onclick   = (function(context, day) { 
           return function() { context.handleDaySelection(day) };
         })(this, new Date(now.getTime()));
@@ -199,7 +254,7 @@
     }
 
     // clear trailing days
-    var begin = this.end.getDate()+startWeekDay;
+    var begin = this.getEnd().getDate() + startWeekDay;
     for( var d=begin;d<=42;d++ ) {
       with( document.getElementById( this.id + d ) ) {
         innerHTML = "";
