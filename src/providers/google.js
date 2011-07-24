@@ -16,23 +16,22 @@ google.load( "gdata", "2.x" );
 
   var
 
-  loadCalendarByAddress = function loadCalendarByAddress(calendar, cb, ctx) {
-    var calendarUrl = 'https://www.google.com/calendar/feeds/' +
-                      calendar + '/public/full';
-    loadCalendar(calendarUrl, cb, ctx);
+  getCalendarUrl = function getCalendarUrl( name ) {
+    return 'https://www.google.com/calendar/feeds/' + name + '/public/full';
   },
 
-  loadCalendar = function loadCalendar(calendarUrl, callback, context) {
+  loadCalendar = function loadCalendar( calendar, start, end, cb, ctx ) {
+    var url = getCalendarUrl(calendar);
     var service = new google.gdata.calendar.CalendarService('gcal4cal.js');
-    var query = new google.gdata.calendar.CalendarEventQuery(calendarUrl);
-    query.setOrderBy('starttime');
-    query.setSortOrder('ascending');
-    query.setFutureEvents(true);
+    var query = new google.gdata.calendar.CalendarEventQuery(url);
+
     query.setSingleEvents(true);
-    query.setMaxResults(10);
-    service.getEventsFeed(query, function(feedRoot) {
-        callback.apply(context, [ listEvents(feedRoot) ] );
-      },
+    query.setMinimumStartTime(new google.gdata.DateTime(start));
+    query.setMaximumStartTime(new google.gdata.DateTime(end));
+
+    service.getEventsFeed( query, function(feedRoot) {
+        cb.apply(ctx, [ listEvents(feedRoot) ] );
+    },
       handleGDError);
   },
 
@@ -100,8 +99,9 @@ google.load( "gdata", "2.x" );
     this.calendar = calendar;
   };
 
-  provider.connection.prototype.getData = function getData( from, to, cb, ctx ) {
-    loadCalendarByAddress( this.calendar, cb, ctx );    
-  };
+  provider.connection.prototype.getData = 
+    function getData( start, end, cb, ctx ) {
+      loadCalendar( this.calendar, start, end, cb, ctx );    
+    };
 
 })(window);
