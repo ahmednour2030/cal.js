@@ -11,8 +11,8 @@
   },
   
   isSameDay = function isSameDay(day1, day2) {
-    return formatDate("d-m-yyyy", day1) 
-        == formatDate("d-m-yyyy", day2);
+    return formatDate("yyyy/m/d", day1) 
+        == formatDate("yyyy/m/d", day2);
   },
   
   formatDate = function formatDate(format, date) {
@@ -267,7 +267,7 @@
 
   // method to return the events on a specific date, ordered chronologically
   cal.calendar.prototype.getEvents = function getEvents(date) {
-    var key = formatDate("d-m-yyyy", date);
+    var key = formatDate("yyyy/m/d", date);
     var events = key in this.data ? this.data[key] : [];
     events.sort( function(a,b) {
       if( a.type == "allday" ) { return 0; }

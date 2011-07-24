@@ -66,8 +66,8 @@ google.load( "gdata", "2.x" );
       } else {
         event.type = "allday";
       }
-      var key = date1.getDate() + "-" + ( date1.getMonth() + 1 ) + "-"
-      + date1.getFullYear();
+      var key = date1.getFullYear() + "/" + ( date1.getMonth() + 1 ) + "/"
+              + date1.getDate();
       if( typeof events[key] == "undefined" ) { events[key] = []; }
       events[key].push( event );
     }
