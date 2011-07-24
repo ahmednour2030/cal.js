@@ -85,13 +85,12 @@
   
   // constructor
   cal.calendar = function calendar(id) {
-    this.id = id;
-    // provide some no-action defaults
-    this.useDataProvider( function(from, to, callback, context) { 
-      callback.apply(context, [{}]);
-    }, true );
-    this.notifyOfDaySelection  ( function() { }           );
-    this.notifyOfEventSelection( function() { }           );
+    this.id        = id;
+    this.data      = {};
+    this.providers = [];
+    
+    this.notifyOfDaySelection  ( function() { } );
+    this.notifyOfEventSelection( function() { } );
   };
 
   // setters for callbacks
@@ -101,14 +100,17 @@
   // or: object with getData method
   cal.calendar.prototype.useDataProvider = 
     function useDataProvider( provider, holdActivation ) {
+      var newProvider = {};
       if( typeof provider == "function" ) { 
-        this.dataContext = this;
-        this.getData = provider;
+        newProvider.context = this;
+        newProvider.method  = provider;
       } else {
-        this.dataContext = provider;
-        this.getData = provider.getData;
+        newProvider.context = provider;
+        newProvider.method  = provider.getData;
       }
-      // we now have a dataprovider, we can refresh our data
+      this.providers.push( newProvider );
+      
+      // we now have a new dataprovider, we can refresh our data
       if( ! holdActivation ) { this.refreshData(true); }
       return this;
     };
@@ -206,24 +208,40 @@
 
   // method to refresh the data for the currently selected month
   cal.calendar.prototype.refreshData = function refreshData(force) {
-    if( this.refreshingData ) { return; }
-    this.refreshingData = true;
+    if( this.refreshingData > 0 ) { return; }
     var newRange = this.getStart() + "->" + this.getEnd();
     if( !force && this.currentDataRange == newRange ) {
       // reuse
-      this.acceptData(this.data);
+      this.setData(this.data);
     } else {
-      // refresh
+      // refresh all providers
+      this.data = {};
       this.currentDataRange = newRange;
-      this.getData.apply( this.dataContext,
-                  [ this.getStart(), this.getEnd(), this.acceptData, this ] );
+      var count = this.refreshingData = this.providers.length;
+      for( var p=0; p<count; p++ ) {
+        var provider = this.providers[p];
+        provider.method.apply( provider.context,
+                  [ this.getStart(), this.getEnd(), this.addData, this ] );
+      }
     }
-  }
+  };
 
   // method to accept new data and re-render the visual representation
-  cal.calendar.prototype.acceptData = function acceptData(data) {
+  cal.calendar.prototype.setData = function setData(data) {
     this.data = data;
-    this.refreshingData = false;
+    this.render();
+  };
+
+  // method to accept new data and re-render the visual representation
+  cal.calendar.prototype.addData = function addData(data) {
+    for( var day in data ) {
+      if( ! this.data[day] ) {
+        this.data[day] = data[day];
+      } else {
+        this.data[day] = this.data[day].concat( data[day] );
+      }
+    }
+    this.refreshingData--;
     this.render();
   };
 
