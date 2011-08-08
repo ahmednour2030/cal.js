@@ -70,20 +70,24 @@ TABLE.calendar TD DIV.timed.event {
   background-color: transparent;
 }
 
-TABLE.calendar TD.today {
-  background-color: #EEF0F5;
-}
-
-TABLE.calendar TD.selected {
-  background-color: #CFE3FF;
-}
-
 TABLE.calendar TD.leading {
   background-color: #EEEEEE;
 }
 
 TABLE.calendar TD.trailing {
   background-color: #EEEEEE;
+}
+
+TABLE.calendar TD.weekend {
+  background-color: #ddd;
+}
+
+TABLE.calendar TD.today {
+  background-color: #EEF0F5;
+}
+
+TABLE.calendar TD.selected {
+  background-color: #CFE3FF;
 }
 
 TABLE.calendar TD.unused {

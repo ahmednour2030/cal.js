@@ -59,8 +59,20 @@
     return container;
   },
   
-  generateClasses = function generateClasses(day, today) {
-    var classes = [];
+  removeFromArray = function removeFromArray(array) {
+    for( var i=1; i<arguments.length; i++ ) {
+      var idx = array.indexOf(arguments[i]);
+      if( idx != -1 ) {
+        array.splice( idx, 1 );
+      }
+    }
+    return array;
+  },
+  
+  generateClasses = function generateClasses(day, today, classes) {
+    classes = removeFromArray( classes || [], 
+                               "today", "selected", 
+                               "leading", "trailing", "unused" );
     var now = new Date();
     if( isSameDay(day, now) ) {
       classes.push( "today" );
@@ -248,24 +260,28 @@
   // method to render the visual representation
   cal.calendar.prototype.render = function render() {
     var startWeekDay = this.getStart().getDay();
-    startWeekDay = startWeekDay <= 0 ? 7 : startWeekDay; // move Sunday to end
+    startWeekDay = startWeekDay == 0 ? 7 : startWeekDay; // move Sunday to end
 
     // clear leading days
-    for( var d=1;d<=startWeekDay;d++ ) {
-      with( document.getElementById( this.id + d ) ) {
-        innerHTML = "";
-        className = "leading";
+    if( startWeekDay > 1 ) {
+      for( var d=1;d<startWeekDay;d++ ) {
+        with( document.getElementById( this.id + d ) ) {
+          innerHTML = "";
+          var classes = removeFromArray( className.split(' '), "leading" );
+          classes.push( "leading" );
+          className = classes.join( ' ' );
+        }
       }
     }
 
     // actual days in this month
     var now = new Date(this.getStart().getTime());
-    for( var d=1; d<=this.getEnd().getDate(); d++) {
+    for( var d=1; d<=this.getEnd().getDate(); d++ ) {
       now.setDate(d);
       with( document.getElementById( this.id + (d + startWeekDay - 1) ) ) {
         innerHTML = "";
         appendChild( createDay(this, now, this.getEvents(now)) );
-        className = generateClasses(now, this.getToday());
+        className = generateClasses(now,this.getToday(),className.split(' '));
         onclick   = (function(context, day) { 
           return function() { context.handleDaySelection(day) };
         })(this, new Date(now.getTime()));
@@ -274,10 +290,12 @@
 
     // clear trailing days
     var begin = this.getEnd().getDate() + startWeekDay;
-    for( var d=begin;d<=42;d++ ) {
+    for( var d=begin; d<=42; d++ ) {
       with( document.getElementById( this.id + d ) ) {
         innerHTML = "";
-        className = begin <= 36 && d >= 36  ? "unused" : "trailing";
+        var classes = removeFromArray( className.split(' '), "unused", "trailing" );
+        classes.push( begin <= 36 && d >= 36  ? "unused" : "trailing" );
+        className = classes.join( ' ' );
       }
     }
     return this;
