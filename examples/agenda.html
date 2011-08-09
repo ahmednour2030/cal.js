@@ -1,0 +1,36 @@
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>cal.js agenda demo</title>
+  <script src="http://www.google.com/jsapi"></script>
+  <script src="../src/cal.js"></script>
+  <script src="../src/providers/google.js"></script>
+  <link href="cal.css" media="screen" rel="stylesheet" type="text/css" />
+</head>
+<body>
+  <h1>cal.js - Agenda</h1>
+  <ul id="agenda">
+  </ul>
+  
+  <script>
+    var myGoogle = Cal.providers.google
+      .connect( "et3o9bb82cs6btuui8vfigbd2c%40group.calendar.google.com" );
+
+    new Cal.calendar()
+       .useDataProvider( myGoogle )
+       .processWith    ( display  )
+       .findEvents     ();
+
+    function display( events ) {
+      var html = "";
+      for( var day in events ) {
+        for( var e=0; e<events[day].length; e++ ) {
+          html += "<li>" + day + " " + events[day][e].subject + "</li>";
+        }
+      }
+      document.getElementById( "agenda" ).innerHTML = html;
+    }
+  </script>
+  
+</body>
+</html>

@@ -89,7 +89,8 @@
   
   // public factory method
   cal.activate = function activate(id) {
-    return new cal.calendar(id);
+    var calendar = new cal.calendar();
+    return calendar.displayOn(id);
   };
   
   // namespace for data-providers
@@ -97,12 +98,16 @@
   
   // constructor
   cal.calendar = function calendar(id) {
-    this.id        = id;
     this.data      = {};
     this.providers = [];
     
     this.notifyOfDaySelection  ( function() { } );
     this.notifyOfEventSelection( function() { } );
+  };
+  
+  cal.calendar.prototype.displayOn = function displayOn(id) {
+    this.id = id;
+    return this;
   };
 
   // setters for callbacks
@@ -112,6 +117,7 @@
   // or: object with getData method
   cal.calendar.prototype.useDataProvider = 
     function useDataProvider( provider, holdActivation ) {
+      if( ! this.id ) { holdActivation = true; }
       var newProvider = {};
       if( typeof provider == "function" ) { 
         newProvider.context = this;
@@ -316,5 +322,23 @@
     } );
     return events;
   };
+
+ cal.calendar.prototype.processWith = function processWith( cb ) {
+   if( typeof cb == "function" ) { this.processEvents = cb; }
+   return this;
+ };
   
+ cal.calendar.prototype.findEvents = function findEvents( start, end ) {
+   if( ! start ) { start = new Date(); } // by default start = now
+   if( ! end   ) {                       // by default end = start + 1 month
+     end = new Date(start.getTime());
+     end.setMonth( end.getMonth() + 1 );
+   }
+   for( var p=0; p<this.providers.length; p++ ) {
+     var provider = this.providers[p];
+     provider.method.apply( provider.context, 
+                            [ start, end, this.processEvents, this ] );
+   }
+ };
+ 
 }(window));

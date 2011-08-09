@@ -1,0 +1,15 @@
+- create Day class ?
+- create Event class + methods to sort, find, merge, ...
+
+- add notes to event
+- create methods to add/remove className's, don't overwrite them
+- fix padding of time visualization + more in general
+
+- make complete demo page and put it on gh-pages
+- make more attractive CSS
+- fix HTML5 positioning of event popup
+
+- revisit:
+	- fix holdActivation
+	- reintroduce refreshing of this.data
+	- make GitHub provider refresh data. force it ?
