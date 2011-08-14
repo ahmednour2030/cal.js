@@ -9,6 +9,16 @@
       console.log( msg );
     }
   },
+
+  indexOf = function indexOf( array, item ) {
+    var len = this.length;
+    for( var i=0 ; i< len; i++) {
+      if( i in array && array[i] === item ) {
+        return from;
+      }
+    }
+    return -1;
+  },
   
   isSameDay = function isSameDay(day1, day2) {
     return formatDate("yyyy/m/d", day1) 
@@ -61,7 +71,7 @@
   
   removeFromArray = function removeFromArray(array) {
     for( var i=1; i<arguments.length; i++ ) {
-      var idx = array.indexOf(arguments[i]);
+      var idx = indexOf(array, arguments[i]);
       if( idx != -1 ) {
         array.splice( idx, 1 );
       }
