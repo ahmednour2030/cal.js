@@ -1,16 +1,11 @@
-// make sure that the Cal global namespace exists
-if( ! Cal ) {
-  alert( "Can't find a global Cal namespace.\n" +
-  "Include https://github.com/christophevg/cal.js in your project." );
-}
-
 // check that the global google namespace exists
-if( ! google ) {
-  alert( "Can't find a global google namespace.\n" +
-  "Include http://google.com/jsapi in your project." );
+if( typeof google != "object" ) {
+  alert( "Unable to access Google.\n"
+         + "Please make sure http://google.com/jsapi is included in your "
+         + "project and that your browser can access the internet." );
+} else {
+  google.load( "gdata", "2.x" );
 }
-
-google.load( "gdata", "2.x" );
 
 (function (globals) {
 
@@ -21,9 +16,14 @@ google.load( "gdata", "2.x" );
   },
 
   loadCalendar = function loadCalendar( calendar, start, end, cb, ctx ) {
-    var url = getCalendarUrl(calendar);
+    if( typeof google != "object" ) {
+      cb.apply( ctx, [ {} ] );
+      return;
+    }
+    
+    var url     = getCalendarUrl(calendar);
     var service = new google.gdata.calendar.CalendarService('gcal4cal.js');
-    var query = new google.gdata.calendar.CalendarEventQuery(url);
+    var query   = new google.gdata.calendar.CalendarEventQuery(url);
 
     query.setSingleEvents(true);
     query.setMinimumStartTime(new google.gdata.DateTime(start));
@@ -89,7 +89,7 @@ google.load( "gdata", "2.x" );
     }
   },
 
-  provider = globals.Cal.providers.google = {};
+  provider = globals.providers.google = {};
   
   provider.connect = function connect( calendar ) {
     return new provider.connection( calendar );
@@ -104,4 +104,4 @@ google.load( "gdata", "2.x" );
       loadCalendar( this.calendar, start, end, cb, ctx );    
     };
 
-})(window);
+})( Cal || window );
