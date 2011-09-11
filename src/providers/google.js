@@ -26,6 +26,7 @@ if( typeof google != "object" ) {
     var query   = new google.gdata.calendar.CalendarEventQuery(url);
 
     query.setSingleEvents(true);
+    query.setMaxResults(3000); // default seems to be 25
     query.setMinimumStartTime(new google.gdata.DateTime(start));
     query.setMaximumStartTime(new google.gdata.DateTime(end));
 
