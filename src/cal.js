@@ -71,7 +71,7 @@
   
   removeFromArray = function removeFromArray(array) {
     for( var i=1; i<arguments.length; i++ ) {
-      var idx = indexOf(array, arguments[i]);
+      var idx = array.indexOf(arguments[i]);
       if( idx != -1 ) {
         array.splice( idx, 1 );
       }
