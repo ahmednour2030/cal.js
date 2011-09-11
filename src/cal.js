@@ -31,6 +31,13 @@
                  .replace(    "m", date.getMonth() +1 )
                  .replace( "yyyy", date.getFullYear() );
   },
+  
+  formatTime = function formatTime(time) {
+    // add leading zero to minutes
+    var parts = time.split( ":" );
+    if( parts[1] < 10 ) { parts[1] = "0" + parts[1]; }
+    return parts[0] + ":" + parts[1];
+  },
 
   daysInMonth = function daysInMonth(month, year) {
 	  return 32 - new Date(year, month, 32).getDate();
@@ -46,7 +53,9 @@
     date.innerHTML = day.getDate();
     container.appendChild(date);
     
-    // add events
+    // create events
+    var allDay = [];
+    var timed  = [];
     var count = events.length;
     for(var e=0; e<count; e++ ) {
       var event = events[e];
@@ -60,10 +69,22 @@
 	        if( e.stopPropagation ) { e.stopPropagation(); }
         }
       })(event);
-      var subject = ( event.type == "timed" ? event.start + " " : "" ) 
-                  + event.subject;
+      var subject = event.subject;
+      if( event.type == "timed" ) {
+        subject = formatTime(event.start) + " " + subject;
+        timed.push( elem );
+      } else {
+        allDay.push( elem );
+      }
       elem.innerHTML = subject;
-      container.appendChild(elem);
+    }
+
+    // loop over ordered lists and append
+    for( var i=0; i<allDay.length; i++ ) {
+      container.appendChild(allDay[i]);
+    }
+    for( var i=0; i<timed.length; i++ ) {
+      container.appendChild(timed[i]);
     }
 
     return container;
