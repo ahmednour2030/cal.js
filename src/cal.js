@@ -183,7 +183,7 @@
 
   // method to move the current date to a sepecific date
   cal.calendar.prototype.gotoDate = function gotoDate(date) {
-    if( ! this.getToday() || ! isSameDay(date, this.getToday() ) ) {
+    if( ! isSameDay(date, this.getToday() ) ) {
       this.today = date ? new Date( date.getTime() ) : new Date();
       this.start = this.end = null;
       this.refreshData();
