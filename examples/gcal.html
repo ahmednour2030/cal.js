@@ -70,13 +70,17 @@
                         .notifyOfEventSelection  ( showEvent )
                         .gotoToday();
 
+    processDaySelection(new Date()); // to initialize the calendar
+
     // when a new date/day has been selected...
     // this handler is executed within the scope of the calendar, so "this"
     // _is_ the actual calendar, so we can call any method on this.
     function processDaySelection(day) {
       hideEvent();        // make sure the event-popup is hidden
       updateLabel(day);   // update the label to match the new date
-      this.gotoDate(day); // we only got the event, now we want to set it
+      if( typeof this.gotoDate == "function" ) {
+        this.gotoDate(day); // we only got the event, now we want to set it
+      }
     }
     
     // hides the event-popup
