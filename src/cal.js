@@ -11,10 +11,10 @@
   },
 
   indexOf = function indexOf( array, item ) {
-    var len = this.length;
+    var len = array.length;
     for( var i=0 ; i< len; i++) {
       if( i in array && array[i] === item ) {
-        return from;
+        return i;
       }
     }
     return -1;
@@ -92,7 +92,7 @@
   
   removeFromArray = function removeFromArray(array) {
     for( var i=1; i<arguments.length; i++ ) {
-      var idx = array.indexOf(arguments[i]);
+      var idx = indexOf(array, arguments[i]);
       if( idx != -1 ) {
         array.splice( idx, 1 );
       }
