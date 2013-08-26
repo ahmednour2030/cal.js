@@ -11,17 +11,23 @@ if( typeof google != "object" ) {
 
   var
 
-  getCalendarUrl = function getCalendarUrl( name ) {
-    return 'https://www.google.com/calendar/feeds/' + name + '/public/full';
+  getCalendarUrl = function getCalendarUrl( name, secret ) {
+    var url = 'https://www.google.com/calendar/feeds/' + name;
+    if( typeof secret != "undefined" && secret != null ) {
+      url += '/private-' + secret;
+    } else {
+      url += '/public';
+    }
+    return url + '/full';
   },
 
-  loadCalendar = function loadCalendar( calendar, start, end, cb, ctx ) {
+  loadCalendar = function loadCalendar( calendar, secret, start, end, cb, ctx ) {
     if( typeof google != "object" ) {
       cb.apply( ctx, [ {} ] );
       return;
     }
     
-    var url     = getCalendarUrl(calendar);
+    var url     = getCalendarUrl(calendar, secret);
     var service = new google.gdata.calendar.CalendarService('gcal4cal.js');
     var query   = new google.gdata.calendar.CalendarEventQuery(url);
 
@@ -31,41 +37,41 @@ if( typeof google != "object" ) {
     query.setMaximumStartTime(new google.gdata.DateTime(end));
 
     service.getEventsFeed( query, function(feedRoot) {
-        cb.apply(ctx, [ listEvents(feedRoot) ] );
-    },
-      handleGDError);
+      cb.apply(ctx, [ listEvents(feedRoot) ] );
+    }, handleGDError);
   },
 
   listEvents = function listEvents(feedRoot) {
-    var events = {};
-    var entries = feedRoot.feed.getEntries();
+    var events   = {};
+    var entries  = feedRoot.feed.getEntries();
     var calendar = feedRoot.feed.title.$t;
-    var len = entries.length;
-    for( var i = 0; i < len; i++ ) {
+    var len      = entries.length;
+
+    for( var i = 0; i<len; i++ ) {
       var entry = entries[i];
       var title = entry.getTitle().getText();
       var date1 = null;
       var date2 = null;
-      var type;
       var times = entry.getTimes();
+
       if( times.length > 0 ) {
-        type  = "timed";
         date1 = times[0].getStartTime().getDate();
         date2 = times[0].getEndTime().getDate();
       } else {
-        type = "allday";
+        alert("Didn't get timing info. This shouldn't happen ;-)");
       }
       // create event
       var event = {
-        type     : type,
+        type     : "timed",
         subject  : title,
         calendar : "google-" + calendar
       };
-      if( type == "timed" && (date2 - date1 < 86400000) ) {
+
+      if( date2 - date1 < 86400000 ) {
         event.start = date1.getHours() + ":" + date1.getMinutes();
         event.end   = date2.getHours() + ":" + date2.getMinutes();
       } else {
-        event.type = "allday";
+        event.type  = "allday";
       }
       var key = date1.getFullYear() + "/" + ( date1.getMonth() + 1 ) + "/"
               + date1.getDate();
@@ -92,17 +98,18 @@ if( typeof google != "object" ) {
 
   provider = globals.providers.google = {};
   
-  provider.connect = function connect( calendar ) {
-    return new provider.connection( calendar );
+  provider.connect = function connect( calendar, secret ) {
+    return new provider.connection( calendar, secret );
   };
   
-  provider.connection = function connection( calendar ) {
+  provider.connection = function connection( calendar, secret ) {
     this.calendar = calendar;
+    this.secret   = secret || null;
   };
 
   provider.connection.prototype.getData = 
     function getData( start, end, cb, ctx ) {
-      loadCalendar( this.calendar, start, end, cb, ctx );    
+      loadCalendar( this.calendar, this.secret, start, end, cb, ctx );
     };
 
 })( Cal || window );
