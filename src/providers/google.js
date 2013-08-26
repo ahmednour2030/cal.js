@@ -103,13 +103,23 @@ if( typeof google != "object" ) {
   };
   
   provider.connection = function connection( calendar, secret ) {
-    this.calendar = calendar;
-    this.secret   = secret || null;
+    secret = secret || null;
+    this.calendars = [];
+    this.connect(calendar, secret);
   };
+
+  provider.connection.prototype.connect =
+    function connect(calendar, secret) {
+      this.calendars.push({ "calendar": calendar, "secret": secret} );
+      return this;
+    }
 
   provider.connection.prototype.getData = 
     function getData( start, end, cb, ctx ) {
-      loadCalendar( this.calendar, this.secret, start, end, cb, ctx );
+      for(var i=0; i<this.calendars.length; i++) {
+        loadCalendar( this.calendars[i].calendar, this.calendars[i].secret,
+                      start, end, cb, ctx );
+      }
     };
 
 })( Cal || window );
