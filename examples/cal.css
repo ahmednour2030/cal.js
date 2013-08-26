@@ -44,6 +44,12 @@ TABLE.calendar TD DIV.github {
 }
 
 TABLE.calendar TD DIV.google-test {
+  border-color: green;
+  color: green;
+  background-color: #ccc;
+}
+
+TABLE.calendar TD DIV.google-test-private {
   border-color: red;
   color: red;
   background-color: #ccc;
