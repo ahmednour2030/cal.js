@@ -59,11 +59,10 @@
   <div id="popup" class="popup"></div>
 
   <script>
-    // setup a connection to Google, using one of the default providers
+    // setup a connection to Google
+    var key = "AIzaSyAb1aOi0VtlKBHJcmNFPhjWWBdOKZ1XJFI";
     var myGoogle = Cal.providers.google
-      .connect( "et3o9bb82cs6btuui8vfigbd2c%40group.calendar.google.com" )
-      .connect( "ccjqfthtngf65ajvt2r4jgcrl8%40group.calendar.google.com",
-                "88d6818f500c878b64d29eabcb70df59" );
+      .connect( "et3o9bb82cs6btuui8vfigbd2c%40group.calendar.google.com", key );
 
     // create your calender object, pointing it to our HTML
     var myCalendar = Cal.activate                ( "c1"                  )

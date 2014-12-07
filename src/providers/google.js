@@ -1,78 +1,73 @@
-// check that the global google namespace exists
-if( typeof google != "object" ) {
-  alert( "Unable to access Google.\n"
-         + "Please make sure http://google.com/jsapi is included in your "
-         + "project and that your browser can access the internet." );
-} else {
-  google.load( "gdata", "2.x" );
-}
-
+window.JSON || document.write('<script src="//cdnjs.cloudflare.com/ajax/libs/json3/3.2.4/json3.min.js"><\/scr'+'ipt>');
+    
 (function (globals) {
 
   var
+  xmlhttp = null,    
 
-  getCalendarUrl = function getCalendarUrl( name, secret ) {
-    var url = 'https://www.google.com/calendar/feeds/' + name;
-    if( typeof secret != "undefined" && secret != null ) {
-      url += '/private-' + secret;
+  initAjax = function initAjax() {
+    if(window.XMLHttpRequest) {
+      // code for IE7+, Firefox, Chrome, Opera, Safari
+      xmlhttp=new XMLHttpRequest();
+    } else if (window.ActiveXObject) {
+      // code for IE6, IE5
+      xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
     } else {
-      url += '/public';
+      alert("Your browser does not support XMLHTTP!");
     }
-    return url + '/full';
   },
 
-  loadCalendar = function loadCalendar( calendar, secret, start, end, cb, ctx ) {
-    if( typeof google != "object" ) {
-      cb.apply( ctx, [ {} ] );
-      return;
+  fetchUrl = function getUrl(url, cb) {
+    if(xmlhttp == null) { initAjax(); }
+    xmlhttp.open("GET", url, true);
+    xmlhttp.send();
+    xmlhttp.onreadystatechange = function() {
+      if( xmlhttp.readyState==4 && xmlhttp.status==200 ) {
+        cb(xmlhttp.responseText);
+      }
     }
-    
-    var url     = getCalendarUrl(calendar, secret);
-    var service = new google.gdata.calendar.CalendarService('gcal4cal.js');
-    var query   = new google.gdata.calendar.CalendarEventQuery(url);
+  }
 
-    query.setSingleEvents(true);
-    query.setMaxResults(3000); // default seems to be 25
-    query.setMinimumStartTime(new google.gdata.DateTime(start));
-    query.setMaximumStartTime(new google.gdata.DateTime(end));
+  getCalendarUrl = function getCalendarUrl( name, key, start, end ) {
+    return 'https://www.googleapis.com/calendar/v3/calendars/' + name
+         + '/events?key=' + key
+         + "&timeMin=" + start.toISOString()
+         + "&timeMax=" + end.toISOString();
+  },
 
-    service.getEventsFeed( query, function(feedRoot) {
-      cb.apply(ctx, [ listEvents(feedRoot) ] );
-    }, handleGDError);
+  loadCalendar = function loadCalendar( calendar, key, start, end, cb, ctx ) {
+    var url = getCalendarUrl(calendar, key, start, end);
+    fetchUrl(url, function(data) {
+      cb.apply(ctx, [ listEvents(JSON.parse(data)) ]);
+    });
   },
 
   listEvents = function listEvents(feedRoot) {
     var events   = {};
-    var entries  = feedRoot.feed.getEntries();
-    var calendar = feedRoot.feed.title.$t;
+    var calendar = feedRoot["summary"];
+    var entries  = feedRoot["items"];
     var len      = entries.length;
+    console.log("loaded", len, "events");
 
-    for( var i = 0; i<len; i++ ) {
+    for(var i=0; i<len; i++) {
       var entry = entries[i];
-      var title = entry.getTitle().getText();
-      var date1 = null;
-      var date2 = null;
-      var times = entry.getTimes();
-
-      if( times.length > 0 ) {
-        date1 = times[0].getStartTime().getDate();
-        date2 = times[0].getEndTime().getDate();
-      } else {
-        alert("Didn't get timing info. This shouldn't happen ;-)");
-      }
+      var title = entry["summary"];
+      var date1 = new Date(Date.parse(
+        entry["start"]["dateTime"] ? entry["start"]["dateTime"] : entry["start"]["date"]
+      ));
+      var date2 = new Date(Date.parse(
+        entry["end"]["dateTime"] ? entry["end"]["dateTime"] : entry["start"]["date"]
+      ));
+      
       // create event
       var event = {
-        type     : "timed",
+        type     : (entry["start"]["dateTime"] ? "timed" : "allday"),
         subject  : title,
-        calendar : "google-" + calendar
+        calendar : "google-" + calendar,
+        start    : date1,
+        end      : date2
       };
 
-      if( date2 - date1 < 86400000 ) {
-        event.start = date1.getHours() + ":" + date1.getMinutes();
-        event.end   = date2.getHours() + ":" + date2.getMinutes();
-      } else {
-        event.type  = "allday";
-      }
       var key = date1.getFullYear() + "/" + ( date1.getMonth() + 1 ) + "/"
               + date1.getDate();
       if( typeof events[key] == "undefined" ) { events[key] = []; }
@@ -81,43 +76,28 @@ if( typeof google != "object" ) {
     return events;
   },
 
-  handleGDError = function handleGDError(e) {
-    if( e instanceof Error ) {
-      alert('Error at line ' + e.lineNumber + ' in ' + e.fileName + '\n' +
-            'Message: ' + e.message);
-      if( e.cause ) {
-        var status = e.cause.status;
-        var statusText = e.cause.statusText;
-        alert('Root cause: HTTP error ' + status + ' with status text of: ' + 
-              statusText);
-      }
-    } else {
-      alert(e.toString());
-    }
-  },
-
   provider = globals.providers.google = {};
   
-  provider.connect = function connect( calendar, secret ) {
-    return new provider.connection( calendar, secret );
+  provider.connect = function connect( calendar, key ) {
+    return new provider.connection( calendar, key );
   };
   
-  provider.connection = function connection( calendar, secret ) {
-    secret = secret || null;
+  provider.connection = function connection( calendar, key ) {
+    key = key || null;
     this.calendars = [];
-    this.connect(calendar, secret);
+    this.connect(calendar, key);
   };
 
   provider.connection.prototype.connect =
-    function connect(calendar, secret) {
-      this.calendars.push({ "calendar": calendar, "secret": secret} );
+    function connect(calendar, key) {
+      this.calendars.push({ "calendar": calendar, "key": key} );
       return this;
     }
 
   provider.connection.prototype.getData = 
     function getData( start, end, cb, ctx ) {
       for(var i=0; i<this.calendars.length; i++) {
-        loadCalendar( this.calendars[i].calendar, this.calendars[i].secret,
+        loadCalendar( this.calendars[i].calendar, this.calendars[i].key,
                       start, end, cb, ctx );
       }
     };
