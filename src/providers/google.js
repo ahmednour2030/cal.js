@@ -47,7 +47,6 @@ window.JSON || document.write('<script src="//cdnjs.cloudflare.com/ajax/libs/jso
     var calendar = feedRoot["summary"];
     var entries  = feedRoot["items"];
     var len      = entries.length;
-    console.log("loaded", len, "events");
 
     for(var i=0; i<len; i++) {
       var entry = entries[i];
