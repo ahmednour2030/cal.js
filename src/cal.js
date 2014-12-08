@@ -34,9 +34,9 @@
   
   formatTime = function formatTime(time) {
     // add leading zero to minutes
-    var parts = time.split( ":" );
-    if( parts[1] < 10 ) { parts[1] = "0" + parts[1]; }
-    return parts[0] + ":" + parts[1];
+    min = time.getMinutes();
+    if( min < 10 ) { min = "0" + min; }
+    return time.getHours() + ":" + min;
   },
 
   daysInMonth = function daysInMonth(month, year) {
@@ -345,11 +345,8 @@
     events.sort( function(a,b) {
       if( a.type == "allday" ) { return 0; }
       if( b.type == "allday" ) { return 0; }
-      var re = /(\d+):(\d+)/;
-      var aa = a.start.match(re);
-      var bb = b.start.match(re);
-      return (parseInt(aa[1])*60 + parseInt(aa[2]))
-           - (parseInt(bb[1])*60 + parseInt(bb[2]));
+      return a.start.getHours()*60 + a.start.getMinutes()
+           - b.start.getHours()*60 + b.start.getMinutes();
     } );
     return events;
   };
